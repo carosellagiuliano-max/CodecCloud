@@ -1,0 +1,29 @@
+{
+  "base": {
+    "name": "main",
+    "sha": "0f094c67830a3598aa074b451c5250ddbb446676"
+  },
+  "head": {
+    "name": "feat/batch-1-codex",
+    "sha": "8abe8350a80167370acd41a2fb0e973e5bf7e39f"
+  },
+  "commits": {
+    "ahead": 1,
+    "behind": 0
+  },
+  "files": [
+    {
+      "status": "A",
+      "path": ".codeccloud/pr-summary.json"
+    },
+    {
+      "status": "M",
+      "path": "package.json"
+    },
+    {
+      "status": "A",
+      "path": "scripts/prepare-pr.mjs"
+    }
+  ],
+  "generatedAt": "2025-10-08T18:14:56.516Z"
+}
