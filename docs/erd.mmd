@@ -1,0 +1,109 @@
+```mermaid
+erDiagram
+    TENANTS ||--o{ PROFILES : "owns"
+    TENANTS ||--o{ STAFF_PROFILES : "employs"
+    TENANTS ||--o{ SERVICES : "offers"
+    TENANTS ||--o{ CATEGORIES : "organises"
+    TENANTS ||--o{ PRODUCTS : "stocks"
+    TENANTS ||--o{ VOUCHERS : "issues"
+    TENANTS ||--o{ ORDERS : "records"
+    TENANTS ||--o{ AUDIT_LOG : "produces"
+    TENANTS ||--o{ CMS_CONTENT : "publishes"
+
+    PROFILES ||--o{ APPOINTMENTS : "books"
+    PROFILES ||--o{ ORDERS : "places"
+    PROFILES ||--o{ VOUCHER_REDEMPTIONS : "redeems"
+    PROFILES ||--o{ AUTH_FACTORS : "verifies"
+
+    STAFF_PROFILES ||--o{ STAFF_AVAILABILITY : "defines"
+    STAFF_PROFILES ||--o{ STAFF_TIME_OFF : "schedules"
+    STAFF_PROFILES ||--o{ APPOINTMENTS : "fulfils"
+    STAFF_PROFILES ||--o{ COMMISSIONS : "earns"
+
+    SERVICES ||--o{ SERVICE_VARIANTS : "bundles"
+    SERVICES ||--o{ APPOINTMENTS : "scheduled for"
+    SERVICES ||--o{ PRICING_RULES : "priced by"
+
+    PRODUCTS ||--o{ PRODUCT_VARIANTS : "has"
+    PRODUCT_VARIANTS ||--o{ PRODUCT_STOCK : "tracked in"
+    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "sold as"
+
+    ORDERS ||--o{ ORDER_ITEMS : "contains"
+    ORDERS ||--o{ PAYMENTS : "collects"
+    ORDERS ||--o{ REFUNDS : "returns"
+
+    APPOINTMENTS ||--o{ APPOINTMENT_SERVICES : "composed of"
+    APPOINTMENTS ||--o{ APPOINTMENT_NOTES : "documented by"
+    APPOINTMENTS ||--o{ RESOURCE_ALLOCATIONS : "reserves"
+    APPOINTMENTS ||--o{ APPOINTMENT_TIMELINE : "tracked in"
+
+    RESOURCES ||--o{ RESOURCE_UNITS : "groups"
+    RESOURCE_UNITS ||--o{ RESOURCE_ALLOCATIONS : "provides"
+
+    OUTBOX ||--o{ OUTBOX_DISPATCH : "emits"
+    OUTBOX_DISPATCH ||--o{ DLQ_EVENTS : "fails"
+
+    AUDIT_LOG ||--|| AUDIT_LOG_SIGNATURES : "hash chained by"
+
+    PAYMENT_METHODS ||--o{ PAYMENTS : "used by"
+    PAYMENT_METHODS ||--o{ REFUNDS : "credited to"
+
+    STOCK_RESERVATIONS }o--|| APPOINTMENTS : "guards"
+    STOCK_RESERVATIONS }o--|| ORDER_ITEMS : "consumes"
+
+    IDENTITY_PROVIDERS ||--o{ AUTH_FACTORS : "links"
+    IDENTITY_PROVIDERS ||--o{ PROFILES : "federates"
+
+    CMS_CONTENT ||--o{ CMS_VERSIONS : "versioned as"
+
+    AUDIT_LOG {
+        uuid id PK
+        uuid tenant_id FK
+        timestamptz occurred_at
+        text actor
+        text action
+        jsonb payload
+        text hash
+    }
+
+    APPOINTMENTS {
+        uuid id PK
+        uuid tenant_id FK
+        uuid customer_id FK
+        uuid staff_id FK
+        tstzrange slot
+        text status
+        integer version
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ORDERS {
+        uuid id PK
+        uuid tenant_id FK
+        uuid profile_id FK
+        uuid appointment_id FK
+        integer total_amount_cents
+        text currency
+        text status
+        timestamptz created_at
+    }
+
+    PAYMENTS {
+        uuid id PK
+        uuid order_id FK
+        text provider
+        text provider_payment_id
+        integer amount_cents
+        text status
+        timestamptz captured_at
+    }
+
+    REFUNDS {
+        uuid id PK
+        uuid payment_id FK
+        integer amount_cents
+        text reason
+        timestamptz processed_at
+    }
+```
