@@ -79,7 +79,7 @@ This document details how CodecCloud evolves from the default MVP deployment (tr
 ## Verification Checklist
 
 - [ ] Event store populated with parity to transactional tables (random sample checks).
-- [ ] Projections reconcile with transactional totals (appointments, revenue, inventory) within ±0.1% variance.
+- [ ] Projections reconcile with transactional totals (appointments, revenue, inventory) within ±0.01% variance (or exact match for financial totals).
 - [ ] Saga orchestrations meet success SLA (≥99% success, ≤1% compensation rate).
 - [ ] Observability dashboards updated with new metrics and alert routes tested.
 - [ ] Rollback procedure executed in staging and documented in the RUNBOOK.
