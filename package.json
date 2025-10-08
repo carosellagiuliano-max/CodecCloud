@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run -r",
+    "e2e": "playwright test"
+  }
+}
