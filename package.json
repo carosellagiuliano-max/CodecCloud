@@ -3,7 +3,7 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "e2e": "playwright test",
     "prepare:pr": "node scripts/prepare-pr.mjs"
   },
