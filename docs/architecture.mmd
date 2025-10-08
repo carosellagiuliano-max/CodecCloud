@@ -1,0 +1,63 @@
+```mermaid
+flowchart TD
+    subgraph Client["Client Applications"]
+        WebApp["Web App (Next.js 15\nSSR/ISR/Edge, PWA)"]
+        AdminPortal["Admin Portal\n(Server + Client Components)"]
+    end
+
+    subgraph Edge["Netlify Edge Runtime"]
+        EdgeFunctions["Edge Functions\n(Business APIs, Webhooks)"]
+        OutboxWorker["Outbox Worker\n(LISTEN/NOTIFY + Cron Fallback)"]
+    end
+
+    subgraph Supabase["Supabase EU Region"]
+        Postgres[("Postgres 15+\nPartitioned Tables + RLS")]
+        Auth["Supabase Auth\n(Passkeys, TOTP)"]
+        Storage["Supabase Storage\n(Encrypted Buckets)"]
+        Realtime["Realtime / LISTEN NOTIFY"]
+        PgCron["pg_cron Schedulers"]
+    end
+
+    subgraph Services["External Services"]
+        Stripe["Stripe\n(Online Payments)"]
+        SumUp["SumUp\n(In-person POS)"]
+        Resend["Resend / Postmark\n(Transactional Mail)"]
+        Redis[("Redis (Aiven/Upstash)\nCaching + Rate Limiting")]
+        Sentry["Sentry EU\n(Error & Performance)"]
+        OTel["OpenTelemetry Collector\n(Traces & Metrics)"]
+    end
+
+    WebApp -->|SSR/ISR| EdgeFunctions
+    AdminPortal -->|API Calls| EdgeFunctions
+    EdgeFunctions -->|Row Level Security Policies| Postgres
+    EdgeFunctions --> Auth
+    EdgeFunctions --> Storage
+    EdgeFunctions --> Realtime
+    EdgeFunctions --> PgCron
+    EdgeFunctions --> Redis
+
+    OutboxWorker -->|Dispatch Jobs| Stripe
+    OutboxWorker --> SumUp
+    OutboxWorker --> Resend
+    OutboxWorker --> Redis
+    OutboxWorker --> Realtime
+    OutboxWorker --> Postgres
+
+    Stripe -->|Webhooks (HMAC)| EdgeFunctions
+    SumUp -->|Webhooks (HMAC + IP Allowlist)| EdgeFunctions
+    Resend -->|Bounce/Complaint Hooks| EdgeFunctions
+
+    EdgeFunctions -->|Telemetry| Sentry
+    EdgeFunctions -->|OTel Exports| OTel
+    WebApp -->|Web Vitals| Sentry
+    WebApp -->|Static Assets| NEXTCDN["Netlify CDN"]
+
+    classDef primary fill:#0f172a,stroke:#1d4ed8,color:#f8fafc;
+    classDef service fill:#312e81,stroke:#5b21b6,color:#f5f3ff;
+    classDef external fill:#064e3b,stroke:#047857,color:#ecfdf5;
+
+    class WebApp,AdminPortal primary;
+    class EdgeFunctions,OutboxWorker primary;
+    class Postgres,Auth,Storage,Realtime,PgCron primary;
+    class Stripe,SumUp,Resend,Redis,Sentry,OTel external;
+```
