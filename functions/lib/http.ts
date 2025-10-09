@@ -8,6 +8,11 @@ export interface ApiRequest {
   body?: unknown;
   query?: Record<string, string | undefined>;
   params?: Record<string, string | undefined>;
+  /**
+   * Connection source IP as provided by the hosting runtime.
+   * Do not populate this field from user-controlled headers.
+   */
+  ip?: string;
 }
 
 export type AuthedHandler = (req: ApiRequest, auth: AuthContext) => Promise<HttpResponse>;

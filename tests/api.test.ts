@@ -279,10 +279,10 @@ describe('Webhook handlers', () => {
       method: 'POST',
       headers: {
         'x-sumup-timestamp': timestamp,
-        'x-sumup-hmac': signature,
-        'x-forwarded-for': '127.0.0.1'
+        'x-sumup-hmac': signature
       },
-      body: raw
+      body: raw,
+      ip: '127.0.0.1'
     } as unknown as ApiRequest;
     const first = (await sumupWebhook(request)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
     expect(first.status).toBe(200);
@@ -299,10 +299,10 @@ describe('Webhook handlers', () => {
       method: 'POST',
       headers: {
         'x-sumup-timestamp': timestamp,
-        'x-sumup-hmac': signatureHigh,
-        'x-forwarded-for': '127.0.0.1'
+        'x-sumup-hmac': signatureHigh
       },
-      body: rawHigh
+      body: rawHigh,
+      ip: '127.0.0.1'
     } as unknown as ApiRequest;
     const higher = (await sumupWebhook(secondRequest)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
     expect(higher.body.replayed).toBe(false);
