@@ -8,7 +8,12 @@ const SUMUP_TOLERANCE_SECONDS = 60 * 5;
 const SUMUP_SECRET = process.env.SUMUP_WEBHOOK_SECRET ?? 'sumup_test_secret';
 const SUMUP_IP_ALLOWLIST = (process.env.SUMUP_IP_ALLOWLIST ?? '127.0.0.1').split(',');
 
-const TRUSTED_PROXY_IP_HEADERS = ['x-nf-client-connection-ip', 'x-vercel-proxy-ip', 'true-client-ip'] as const;
+const TRUSTED_PROXY_IP_HEADERS = [
+  'x-nf-client-connection-ip',
+  'x-vercel-proxy-ip',
+  'cf-connecting-ip',
+  'true-client-ip'
+] as const;
 
 const extractConnectionIp = (req: ApiRequest) => {
   if (req.ip?.trim()) {

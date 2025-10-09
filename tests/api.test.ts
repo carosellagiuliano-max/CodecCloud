@@ -290,6 +290,18 @@ describe('Webhook handlers', () => {
     const replay = (await sumupWebhook(request)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
     expect(replay.body.replayed).toBe(true);
 
+    const proxiedRequest: ApiRequest = {
+      method: 'POST',
+      headers: {
+        'x-sumup-timestamp': timestamp,
+        'x-sumup-hmac': signature,
+        'cf-connecting-ip': '127.0.0.1'
+      },
+      body: raw
+    } as unknown as ApiRequest;
+    const proxied = (await sumupWebhook(proxiedRequest)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
+    expect(proxied.status).toBe(200);
+
     const higherSequencePayload = { ...payload, sequence: 2 };
     const rawHigh = JSON.stringify(higherSequencePayload);
     const signatureHigh = createHmac('sha256', 'sumup_test_secret')
