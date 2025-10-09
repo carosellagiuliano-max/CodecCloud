@@ -9,6 +9,9 @@ coverage
 !.env.example
 .idea
 .vscode
+**/.next/
+**/playwright-report/
+**/test-results/
 .next
 out
 apps/web/test-results/
