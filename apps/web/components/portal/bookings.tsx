@@ -30,22 +30,97 @@ const DialogOverlay = DialogPrimitive.Overlay;
 const createBookingsQueryKey = (locale: AppLocale, tenantId: string | null) =>
   ['bookings', locale, tenantId] as const;
 
+const BOOKING_TIME_ZONE = 'Europe/Zurich';
+
+type DateTimePart = 'year' | 'month' | 'day' | 'hour' | 'minute';
+
+const parseDateTimeInTimeZone = (value: string, timeZone: string) => {
+  const [datePart, timePart] = value.split('T');
+  if (!datePart || !timePart) {
+    return null;
+  }
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+  if ([year, month, day, hour, minute].some((val) => Number.isNaN(val))) {
+    return null;
+  }
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  const baseUtc = Date.UTC(year, month - 1, day, hour, minute);
+  const matchesInput = (candidate: Date) => {
+    const parts = formatter.formatToParts(candidate);
+    const getPartValue = (type: DateTimePart) => {
+      const match = parts.find((part) => part.type === type);
+      return match ? Number(match.value) : Number.NaN;
+    };
+    return (
+      getPartValue('year') === year &&
+      getPartValue('month') === month &&
+      getPartValue('day') === day &&
+      getPartValue('hour') === hour &&
+      getPartValue('minute') === minute
+    );
+  };
+  for (let offsetMinutes = -14 * 60; offsetMinutes <= 14 * 60; offsetMinutes += 15) {
+    const candidate = new Date(baseUtc - offsetMinutes * 60 * 1000);
+    if (matchesInput(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+};
+
 const toLocalDateTimeInputValue = (isoString: string) => {
   const date = new Date(isoString);
   if (Number.isNaN(date.getTime())) {
     return '';
   }
-  const timezoneOffset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - timezoneOffset * 60 * 1000);
-  return localDate.toISOString().slice(0, 16);
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: BOOKING_TIME_ZONE,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  const parts = formatter.formatToParts(date);
+  const fields: Partial<Record<DateTimePart, string>> = {};
+  for (const part of parts) {
+    switch (part.type) {
+      case 'year':
+      case 'month':
+      case 'day':
+      case 'hour':
+      case 'minute':
+        fields[part.type] = part.value;
+        break;
+      default:
+        break;
+    }
+  }
+  const { year, month, day, hour, minute } = fields;
+  if (!year || !month || !day || !hour || !minute) {
+    return '';
+  }
+  return `${year}-${month}-${day}T${hour}:${minute}`;
 };
 
 const toIsoTimestamp = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
+  const zonedDate = parseDateTimeInTimeZone(value, BOOKING_TIME_ZONE);
+  if (zonedDate) {
+    return zonedDate.toISOString();
   }
-  return date.toISOString();
+  const fallback = new Date(value);
+  return Number.isNaN(fallback.getTime()) ? value : fallback.toISOString();
 };
 
 export function PortalBookings({ locale }: { locale: AppLocale }) {
@@ -143,7 +218,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(locale, {
-        timeZone: 'Europe/Zurich',
+        timeZone: BOOKING_TIME_ZONE,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
