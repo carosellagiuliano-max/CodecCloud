@@ -1,0 +1,113 @@
+{
+  "common": {
+    "brand": "CodecCloud Salon",
+    "loading": "Wird geladen…",
+    "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "success": "Aktion erfolgreich gespeichert.",
+    "actions": {
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "close": "Schliessen",
+      "confirm": "Bestätigen",
+      "retry": "Erneut versuchen"
+    },
+    "statuses": {
+      "confirmed": "Bestätigt",
+      "pending": "Ausstehend",
+      "cancelled": "Storniert"
+    }
+  },
+  "navigation": {
+    "home": "Start",
+    "book": "Termin buchen",
+    "signin": "Anmelden",
+    "dashboard": "Dashboard",
+    "calendar": "Kalender",
+    "team": "Team",
+    "bookings": "Buchungen",
+    "settings": "Einstellungen",
+    "logout": "Abmelden",
+    "admin": "Administration",
+    "portal": "Kundenportal"
+  },
+  "public": {
+    "heroTitle": "Dein Salon. Deine Kundschaft. Perfekt organisiert.",
+    "heroSubtitle": "CodecCloud Salon vereint Online-Buchungen, Ressourcenplanung und moderne Kommunikation in einer App für die Schweiz.",
+    "cta": "Termin vereinbaren",
+    "services": {
+      "title": "Beliebte Services",
+      "description": "Transparente Preise in Schweizer Franken. Dauer inklusive Beratung.",
+      "from": "ab"
+    }
+  },
+  "auth": {
+    "title": "Willkommen zurück",
+    "subtitle": "Melde dich mit deinem geschützten Teamkonto an.",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "magicLink": "Magic Link senden",
+    "sso": "Mit SSO fortfahren",
+    "error": "Ungültige Anmeldedaten",
+    "success": "Anmeldung erfolgreich"
+  },
+  "portal": {
+    "title": "Meine Termine",
+    "empty": "Du hast noch keine Termine.",
+    "upcoming": "Bevorstehende Termine",
+    "history": "Vergangene Termine",
+    "reschedule": "Umbuchen",
+    "cancel": "Termin stornieren",
+    "offlineNotice": "Offline-Modus: Neue Buchungen sind deaktiviert."
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Salon-Performance",
+      "kpiRevenue": "Umsatz",
+      "kpiUtilization": "Auslastung",
+      "kpiSatisfaction": "Zufriedenheit",
+      "realtime": "Live-Updates aktiviert"
+    },
+    "staff": {
+      "title": "Teamverwaltung",
+      "add": "Mitarbeitende einladen",
+      "role": "Rolle",
+      "availability": "Verfügbarkeit",
+      "new": {
+        "title": "Neues Teammitglied",
+        "name": "Name",
+        "email": "E-Mail",
+        "role": "Rolle",
+        "submit": "Einladung senden"
+      }
+    }
+  },
+  "calendar": {
+    "title": "Kalender",
+    "ariaLive": "Kalender aktualisiert",
+    "move": "Termin verschoben auf {date}",
+    "conflict": "Konflikt: Slot ist bereits vergeben.",
+    "drop": "Termin loslassen",
+    "grab": "Termin auswählen",
+    "resize": "Termin länger oder kürzer machen",
+    "navigate": "Mit Pfeiltasten durch Tage navigieren"
+  },
+  "pwa": {
+    "offline": {
+      "title": "Offline-Modus",
+      "description": "Du bist offline. Bestehende Daten sind verfügbar, neue Aktionen werden synchronisiert sobald eine Verbindung besteht.",
+      "bookingDisabled": "Buchungen sind offline nicht verfügbar."
+    },
+    "install": {
+      "title": "CodecCloud als App installieren",
+      "hint": "Füge CodecCloud zu deinem Home-Bildschirm hinzu, um schnell auf Kalender und Buchungen zuzugreifen."
+    }
+  },
+  "notifications": {
+    "conflict": "Termin wurde wegen eines Konflikts zurückgerollt.",
+    "optimistic": "Speichern…",
+    "synced": "Synchronisiert"
+  }
+}

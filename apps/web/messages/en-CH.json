@@ -1,0 +1,113 @@
+{
+  "common": {
+    "brand": "CodecCloud Salon",
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "success": "Action saved successfully.",
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "close": "Close",
+      "confirm": "Confirm",
+      "retry": "Retry"
+    },
+    "statuses": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "cancelled": "Cancelled"
+    }
+  },
+  "navigation": {
+    "home": "Home",
+    "book": "Book appointment",
+    "signin": "Sign in",
+    "dashboard": "Dashboard",
+    "calendar": "Calendar",
+    "team": "Team",
+    "bookings": "Bookings",
+    "settings": "Settings",
+    "logout": "Sign out",
+    "admin": "Administration",
+    "portal": "Customer portal"
+  },
+  "public": {
+    "heroTitle": "Your salon. Your guests. Seamlessly orchestrated.",
+    "heroSubtitle": "CodecCloud Salon unifies online booking, resource planning and modern communication in one Swiss-native app.",
+    "cta": "Schedule now",
+    "services": {
+      "title": "Popular services",
+      "description": "Transparent pricing in Swiss francs. Duration includes consultation.",
+      "from": "from"
+    }
+  },
+  "auth": {
+    "title": "Welcome back",
+    "subtitle": "Sign in with your secured team account.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "magicLink": "Send magic link",
+    "sso": "Continue with SSO",
+    "error": "Invalid credentials",
+    "success": "Signed in successfully"
+  },
+  "portal": {
+    "title": "My appointments",
+    "empty": "You do not have any appointments yet.",
+    "upcoming": "Upcoming appointments",
+    "history": "History",
+    "reschedule": "Reschedule",
+    "cancel": "Cancel",
+    "offlineNotice": "Offline mode: new bookings are disabled."
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Salon performance",
+      "kpiRevenue": "Revenue",
+      "kpiUtilization": "Utilisation",
+      "kpiSatisfaction": "Satisfaction",
+      "realtime": "Live updates enabled"
+    },
+    "staff": {
+      "title": "Team management",
+      "add": "Invite team member",
+      "role": "Role",
+      "availability": "Availability",
+      "new": {
+        "title": "New team member",
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "submit": "Send invitation"
+      }
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "ariaLive": "Calendar updated",
+    "move": "Appointment moved to {date}",
+    "conflict": "Conflict: slot already taken.",
+    "drop": "Drop appointment",
+    "grab": "Pick up appointment",
+    "resize": "Change appointment length",
+    "navigate": "Use arrow keys to navigate days"
+  },
+  "pwa": {
+    "offline": {
+      "title": "Offline",
+      "description": "You are offline. Existing data remains available and will sync once connected.",
+      "bookingDisabled": "Booking is not available offline."
+    },
+    "install": {
+      "title": "Install CodecCloud",
+      "hint": "Add CodecCloud to your home screen for quick access to bookings and the calendar."
+    }
+  },
+  "notifications": {
+    "conflict": "Appointment rolled back due to a conflict.",
+    "optimistic": "Saving…",
+    "synced": "Synced"
+  }
+}

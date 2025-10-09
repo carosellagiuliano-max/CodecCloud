@@ -1,0 +1,113 @@
+{
+  "common": {
+    "brand": "CodecCloud Salon",
+    "loading": "Caricamento…",
+    "error": "Si è verificato un errore. Riprova.",
+    "success": "Azione salvata con successo.",
+    "actions": {
+      "save": "Salva",
+      "cancel": "Annulla",
+      "edit": "Modifica",
+      "delete": "Elimina",
+      "close": "Chiudi",
+      "confirm": "Conferma",
+      "retry": "Riprova"
+    },
+    "statuses": {
+      "confirmed": "Confermato",
+      "pending": "In attesa",
+      "cancelled": "Annullato"
+    }
+  },
+  "navigation": {
+    "home": "Home",
+    "book": "Prenota",
+    "signin": "Accedi",
+    "dashboard": "Dashboard",
+    "calendar": "Calendario",
+    "team": "Team",
+    "bookings": "Prenotazioni",
+    "settings": "Impostazioni",
+    "logout": "Esci",
+    "admin": "Amministrazione",
+    "portal": "Portale clienti"
+  },
+  "public": {
+    "heroTitle": "Il tuo salone. La tua clientela. Organizzati alla perfezione.",
+    "heroSubtitle": "CodecCloud Salon riunisce prenotazioni online, pianificazione delle risorse e comunicazione moderna in un'unica app svizzera.",
+    "cta": "Prenota un appuntamento",
+    "services": {
+      "title": "Servizi popolari",
+      "description": "Prezzi trasparenti in franchi svizzeri. Durata inclusa la consulenza.",
+      "from": "da"
+    }
+  },
+  "auth": {
+    "title": "Bentornato",
+    "subtitle": "Accedi con il tuo account di squadra protetto.",
+    "email": "E-mail",
+    "password": "Password",
+    "submit": "Accedi",
+    "magicLink": "Invia link magico",
+    "sso": "Continua con SSO",
+    "error": "Credenziali non valide",
+    "success": "Accesso riuscito"
+  },
+  "portal": {
+    "title": "I miei appuntamenti",
+    "empty": "Non hai ancora appuntamenti.",
+    "upcoming": "Prossimi appuntamenti",
+    "history": "Storico",
+    "reschedule": "Ripianifica",
+    "cancel": "Annulla",
+    "offlineNotice": "Modalità offline: le nuove prenotazioni sono disattivate."
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Performance del salone",
+      "kpiRevenue": "Fatturato",
+      "kpiUtilization": "Tasso di utilizzo",
+      "kpiSatisfaction": "Soddisfazione",
+      "realtime": "Aggiornamenti in tempo reale attivati"
+    },
+    "staff": {
+      "title": "Gestione del team",
+      "add": "Invita collaboratori",
+      "role": "Ruolo",
+      "availability": "Disponibilità",
+      "new": {
+        "title": "Nuovo membro",
+        "name": "Nome",
+        "email": "E-mail",
+        "role": "Ruolo",
+        "submit": "Invia invito"
+      }
+    }
+  },
+  "calendar": {
+    "title": "Calendario",
+    "ariaLive": "Calendario aggiornato",
+    "move": "Appuntamento spostato al {date}",
+    "conflict": "Conflitto: fascia già occupata.",
+    "drop": "Rilascia appuntamento",
+    "grab": "Seleziona appuntamento",
+    "resize": "Adatta la durata",
+    "navigate": "Usa le frecce per navigare tra i giorni"
+  },
+  "pwa": {
+    "offline": {
+      "title": "Modalità offline",
+      "description": "Sei offline. I dati esistenti sono disponibili e verranno sincronizzati al ritorno della connessione.",
+      "bookingDisabled": "Le prenotazioni non sono disponibili offline."
+    },
+    "install": {
+      "title": "Installa CodecCloud",
+      "hint": "Aggiungi CodecCloud alla schermata principale per accedere rapidamente a calendario e prenotazioni."
+    }
+  },
+  "notifications": {
+    "conflict": "Appuntamento ripristinato a causa di un conflitto.",
+    "optimistic": "Salvataggio…",
+    "synced": "Sincronizzato"
+  }
+}

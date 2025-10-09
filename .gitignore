@@ -11,3 +11,5 @@ coverage
 .vscode
 .next
 out
+apps/web/test-results/
+apps/web/tsconfig.tsbuildinfo

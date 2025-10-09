@@ -1,0 +1,113 @@
+{
+  "common": {
+    "brand": "CodecCloud Salon",
+    "loading": "Chargement…",
+    "error": "Un problème est survenu. Merci de réessayer.",
+    "success": "Action enregistrée avec succès.",
+    "actions": {
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "close": "Fermer",
+      "confirm": "Confirmer",
+      "retry": "Réessayer"
+    },
+    "statuses": {
+      "confirmed": "Confirmé",
+      "pending": "En attente",
+      "cancelled": "Annulé"
+    }
+  },
+  "navigation": {
+    "home": "Accueil",
+    "book": "Réserver",
+    "signin": "Connexion",
+    "dashboard": "Tableau de bord",
+    "calendar": "Calendrier",
+    "team": "Équipe",
+    "bookings": "Réservations",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "admin": "Administration",
+    "portal": "Portail client"
+  },
+  "public": {
+    "heroTitle": "Votre salon. Votre clientèle. Parfaitement organisés.",
+    "heroSubtitle": "CodecCloud Salon réunit réservation en ligne, planification des ressources et communication moderne dans une seule application suisse.",
+    "cta": "Prendre rendez-vous",
+    "services": {
+      "title": "Services populaires",
+      "description": "Prix transparents en francs suisses. Durée incluant la consultation.",
+      "from": "dès"
+    }
+  },
+  "auth": {
+    "title": "Bon retour",
+    "subtitle": "Connectez-vous avec votre compte d'équipe protégé.",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "magicLink": "Envoyer un lien magique",
+    "sso": "Continuer avec SSO",
+    "error": "Identifiants invalides",
+    "success": "Connexion réussie"
+  },
+  "portal": {
+    "title": "Mes rendez-vous",
+    "empty": "Vous n'avez pas encore de rendez-vous.",
+    "upcoming": "Prochains rendez-vous",
+    "history": "Historique",
+    "reschedule": "Replanifier",
+    "cancel": "Annuler",
+    "offlineNotice": "Mode hors ligne : les nouvelles réservations sont désactivées."
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Performance du salon",
+      "kpiRevenue": "Chiffre d'affaires",
+      "kpiUtilization": "Taux d'occupation",
+      "kpiSatisfaction": "Satisfaction",
+      "realtime": "Mises à jour en direct activées"
+    },
+    "staff": {
+      "title": "Gestion de l'équipe",
+      "add": "Inviter un collaborateur",
+      "role": "Rôle",
+      "availability": "Disponibilité",
+      "new": {
+        "title": "Nouveau membre",
+        "name": "Nom",
+        "email": "E-mail",
+        "role": "Rôle",
+        "submit": "Envoyer l'invitation"
+      }
+    }
+  },
+  "calendar": {
+    "title": "Calendrier",
+    "ariaLive": "Calendrier mis à jour",
+    "move": "Rendez-vous déplacé au {date}",
+    "conflict": "Conflit : le créneau est déjà pris.",
+    "drop": "Lâcher le rendez-vous",
+    "grab": "Sélectionner le rendez-vous",
+    "resize": "Adapter la durée",
+    "navigate": "Utilisez les flèches pour naviguer dans les jours"
+  },
+  "pwa": {
+    "offline": {
+      "title": "Mode hors ligne",
+      "description": "Vous êtes hors ligne. Les données existantes restent disponibles et seront synchronisées lors du retour en ligne.",
+      "bookingDisabled": "Les réservations ne sont pas disponibles hors ligne."
+    },
+    "install": {
+      "title": "Installer CodecCloud",
+      "hint": "Ajoutez CodecCloud à votre écran d'accueil pour accéder rapidement au calendrier et aux rendez-vous."
+    }
+  },
+  "notifications": {
+    "conflict": "Rendez-vous restauré en raison d'un conflit.",
+    "optimistic": "Enregistrement…",
+    "synced": "Synchronisé"
+  }
+}
