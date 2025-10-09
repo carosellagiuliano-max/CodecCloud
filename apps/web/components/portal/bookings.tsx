@@ -27,8 +27,11 @@ const DialogTitle = DialogPrimitive.Title;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogOverlay = DialogPrimitive.Overlay;
 
-const createBookingsQueryKey = (locale: AppLocale, tenantId: string | null) =>
-  ['bookings', locale, tenantId] as const;
+const createBookingsQueryKey = (
+  locale: AppLocale,
+  tenantId: string | null,
+  sessionToken: string | null
+) => ['bookings', locale, tenantId, sessionToken] as const;
 
 const BOOKING_TIME_ZONE = 'Europe/Zurich';
 
@@ -129,8 +132,13 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
   const notifications = useTranslations('notifications');
   const { session } = useSession();
   const bookingsQueryKey = useMemo(
-    () => createBookingsQueryKey(locale, session?.tenantId ?? null),
-    [locale, session?.tenantId]
+    () =>
+      createBookingsQueryKey(
+        locale,
+        session?.tenantId ?? null,
+        session?.accessToken ?? null
+      ),
+    [locale, session?.tenantId, session?.accessToken]
   );
   const { data: bookings = [] } = useQuery({
     queryKey: bookingsQueryKey,
