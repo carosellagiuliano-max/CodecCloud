@@ -319,7 +319,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
                                 />
                               </label>
                               <label className="block text-sm font-medium text-slate-700">
-                                Ende
+                                {t('end')}
                                 <input
                                   type="datetime-local"
                                   className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
