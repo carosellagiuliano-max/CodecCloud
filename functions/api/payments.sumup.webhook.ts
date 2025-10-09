@@ -16,11 +16,13 @@ const SUMUP_SECRET =
   process.env.SUMUP_WEBHOOK_HMAC_KEY ?? process.env.SUMUP_WEBHOOK_SECRET ?? 'sumup_test_secret';
 const SUMUP_ALLOWED_RANGES =
   process.env.SUMUP_ALLOWED_IP_RANGES ?? process.env.SUMUP_IP_ALLOWLIST;
+
 if (!SUMUP_ALLOWED_RANGES) {
   throw new Error(
     "No IP allowlist configured for SumUp webhook. Please set SUMUP_ALLOWED_IP_RANGES or SUMUP_IP_ALLOWLIST in the environment."
   );
 }
+
 const SUMUP_CLIENT_ID = process.env.SUMUP_CLIENT_ID ?? 'salon-pos-client';
 const SUMUP_CLIENT_SECRET = process.env.SUMUP_CLIENT_SECRET ?? 'salon-pos-secret';
 const SUMUP_API_BASE_URL = (process.env.SUMUP_API_BASE_URL ?? 'https://api.sumup.com').replace(/\/$/, '');
@@ -56,6 +58,7 @@ const parseIpv4 = (ip: string): number | null => {
 const parseRange = (entry: string): IpRange | null => {
   const trimmed = entry.trim();
   if (!trimmed) return null;
+
   if (trimmed.includes('/')) {
     const [network, prefixRaw] = trimmed.split('/');
     const prefix = Number.parseInt(prefixRaw, 10);
@@ -70,6 +73,7 @@ const parseRange = (entry: string): IpRange | null => {
     const base = (networkValue & mask) >>> 0;
     return { type: 'cidr', base, mask };
   }
+
   const single = parseIpv4(trimmed);
   if (single === null) {
     return null;
@@ -96,6 +100,8 @@ const isIpAllowlisted = (ip: string): boolean => {
 
 const extractCandidateIps = (req: ApiRequest) => {
   const candidates: string[] = [];
+  
+  // Prüfe ZUERST die vertrauenswürdigen Proxy-Headers (höhere Priorität)
   for (const header of TRUSTED_PROXY_IP_HEADERS) {
     const value = req.headers[header];
     if (!value) continue;
@@ -104,9 +110,12 @@ const extractCandidateIps = (req: ApiRequest) => {
       candidates.push(first);
     }
   }
-  if (req.ip?.trim()) {
+  
+  // req.ip nur als Fallback verwenden, wenn keine Proxy-Headers vorhanden sind
+  if (candidates.length === 0 && req.ip?.trim()) {
     candidates.push(req.ip.trim());
   }
+  
   return candidates;
 };
 
@@ -238,6 +247,7 @@ class SumUpApiClient {
     if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
       throw new BadRequestError('SumUp client credentials are not configured.');
     }
+
     const response = await fetch(`${SUMUP_API_BASE_URL}/token`, {
       method: 'POST',
       headers: {
@@ -250,16 +260,21 @@ class SumUpApiClient {
         scope: SUMUP_TOKEN_SCOPE
       })
     });
+
     if (!response.ok) {
       throw new BadRequestError('Failed to authenticate SumUp request.');
     }
+
     const data = await readJsonResponse(response);
     const accessToken = typeof data.access_token === 'string' ? data.access_token : null;
+
     if (!accessToken) {
       throw new BadRequestError('SumUp access token missing in provider response.');
     }
+
     const expiresIn =
       typeof data.expires_in === 'number' && Number.isFinite(data.expires_in) ? data.expires_in : 300;
+
     return {
       value: accessToken,
       expiresAt: Date.now() + Math.max(expiresIn - 15, 30) * 1000
@@ -276,6 +291,7 @@ class SumUpApiClient {
 
   async verifyTransaction(transactionId: string, eventId: string) {
     const token = await this.getAccessToken();
+
     const response = await fetch(`${SUMUP_API_BASE_URL}/v0.1/me/transactions/${transactionId}`, {
       method: 'GET',
       headers: {
@@ -283,23 +299,29 @@ class SumUpApiClient {
         accept: 'application/json'
       }
     });
+
     if (!response.ok) {
       throw new BadRequestError('SumUp transaction could not be verified.');
     }
+
     const data = await readJsonResponse(response);
+
     const remoteTransactionId =
       typeof data.id === 'string'
         ? data.id
         : typeof data.transaction_id === 'string'
           ? data.transaction_id
           : undefined;
+
     if (remoteTransactionId && remoteTransactionId !== transactionId) {
       throw new BadRequestError('SumUp transaction mismatch.');
     }
+
     const remoteEventId = typeof data.event_id === 'string' ? data.event_id : undefined;
     if (remoteEventId && remoteEventId !== eventId) {
       throw new BadRequestError('SumUp event mismatch.');
     }
+
     return data;
   }
 }
@@ -315,6 +337,7 @@ export const handler = withoutAuth(async (req: ApiRequest) => {
   const payload = parseJson(SumUpWebhookSchema, parseJsonBody(rawBody));
   const tenantId = extractTenantId(payload);
   const transactionId = extractTransactionId(payload);
+
   const verification = await sumUpClient.verifyTransaction(transactionId, payload.event_id);
 
   const stored = await db.transaction(tenantId, async (tx) => {
@@ -330,6 +353,7 @@ export const handler = withoutAuth(async (req: ApiRequest) => {
       sequence: payload.sequence,
       receivedAt: Date.now()
     });
+
     if (result.stored) {
       tx.enqueueOutbox('payments.sumup', {
         eventId: payload.event_id,
@@ -337,6 +361,7 @@ export const handler = withoutAuth(async (req: ApiRequest) => {
         payload: payload.payload
       });
     }
+
     return result.stored;
   });
 
