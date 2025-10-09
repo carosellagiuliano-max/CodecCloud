@@ -1,0 +1,65 @@
+name: db-verify
+
+on:
+  push:
+    paths:
+      - '.supabase/migrations/**'
+      - 'scripts/db/**'
+      - 'policies/**'
+      - '.github/workflows/db-verify.yml'
+  pull_request:
+    paths:
+      - '.supabase/migrations/**'
+      - 'scripts/db/**'
+      - 'policies/**'
+      - '.github/workflows/db-verify.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Apply migrations twice (idempotency check)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          for iteration in 1 2; do
+            for file in .supabase/migrations/0001_core.sql .supabase/migrations/0001_policies.sql; do
+              echo "Applying $file (pass ${iteration})"
+              psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d postgres -f "$file"
+            done
+          done
+
+      - name: Run smoke script
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d postgres -f scripts/db/smoke.sql | tee verify-log.txt
+
+      - name: Upload verify log
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-verify-log
+          path: verify-log.txt
