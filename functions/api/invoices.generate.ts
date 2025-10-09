@@ -14,6 +14,7 @@ const getKey = (headers: Record<string, string | undefined>) =>
 
 export const handler = withAuth(async (req, auth) => {
   await rateLimiter.consume(`invoices:generate:${auth.userId}`);
+
   const key = getKey(req.headers);
   if (!key) {
     throw new BadRequestError('Idempotency-Key header is required.');
@@ -28,8 +29,9 @@ export const handler = withAuth(async (req, auth) => {
     store: idempotencyStore,
     execute: async () => {
       const outcome = await db.transaction(auth.tenantId, async (tx) => {
-        const booking = tx.getBookingCopy(payload.bookingId);
+        const booking = await tx.getBookingCopy(payload.bookingId);
         const invoiceId = randomUUID();
+
         const invoice = tx.createInvoice({
           id: invoiceId,
           tenantId: auth.tenantId,
