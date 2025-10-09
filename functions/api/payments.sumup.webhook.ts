@@ -15,7 +15,12 @@ const SUMUP_TOLERANCE_SECONDS = resolveNumber(process.env.SUMUP_TIMESTAMP_WINDOW
 const SUMUP_SECRET =
   process.env.SUMUP_WEBHOOK_HMAC_KEY ?? process.env.SUMUP_WEBHOOK_SECRET ?? 'sumup_test_secret';
 const SUMUP_ALLOWED_RANGES =
-  process.env.SUMUP_ALLOWED_IP_RANGES ?? process.env.SUMUP_IP_ALLOWLIST ?? '127.0.0.1';
+  process.env.SUMUP_ALLOWED_IP_RANGES ?? process.env.SUMUP_IP_ALLOWLIST;
+if (!SUMUP_ALLOWED_RANGES) {
+  throw new Error(
+    "No IP allowlist configured for SumUp webhook. Please set SUMUP_ALLOWED_IP_RANGES or SUMUP_IP_ALLOWLIST in the environment."
+  );
+}
 const SUMUP_CLIENT_ID = process.env.SUMUP_CLIENT_ID ?? 'salon-pos-client';
 const SUMUP_CLIENT_SECRET = process.env.SUMUP_CLIENT_SECRET ?? 'salon-pos-secret';
 const SUMUP_API_BASE_URL = (process.env.SUMUP_API_BASE_URL ?? 'https://api.sumup.com').replace(/\/$/, '');
