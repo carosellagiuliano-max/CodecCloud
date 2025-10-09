@@ -37,7 +37,7 @@ export function SignInForm({ locale }: { locale: string }) {
         return;
       }
       const payload = await response.json();
-      hydrateSession({
+      await hydrateSession({
         accessToken: payload.accessToken,
         expiresAt: Date.now() + payload.expiresIn * 1000,
         locale,

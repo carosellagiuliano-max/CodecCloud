@@ -26,9 +26,11 @@ export function AdminStaff({ locale }: { locale: AppLocale }) {
   const pushNotification = useUiStore((state) => state.pushNotification);
   const connectivity = useUiStore((state) => state.connectivity);
 
+  const staffQueryKey = ['staff', locale, session?.tenantId ?? null] as const;
+
   const { data: staff = [] } = useQuery({
-    queryKey: ['staff', locale],
-    queryFn: () => (session ? apiClient.listStaff(session.accessToken, locale) : [] as StaffMember[]),
+    queryKey: staffQueryKey,
+    queryFn: () => (session ? apiClient.listStaff(locale) : ([] as StaffMember[])),
     enabled: Boolean(session)
   });
   const isAuthenticated = Boolean(session);
@@ -43,13 +45,13 @@ export function AdminStaff({ locale }: { locale: AppLocale }) {
       if (!session) {
         throw new Error('unauthenticated');
       }
-      return apiClient.inviteStaff(values, session.accessToken, locale);
+      return apiClient.inviteStaff(values, locale);
     },
     onMutate: async (values) => {
-      await queryClient.cancelQueries({ queryKey: ['staff', locale] });
-      const snapshot = queryClient.getQueryData<StaffMember[]>(['staff', locale]);
+      await queryClient.cancelQueries({ queryKey: staffQueryKey });
+      const snapshot = queryClient.getQueryData<StaffMember[]>(staffQueryKey);
       if (snapshot) {
-        queryClient.setQueryData<StaffMember[]>(['staff', locale], [
+        queryClient.setQueryData<StaffMember[]>(staffQueryKey, [
           ...snapshot,
           {
             id: `temp-${Date.now()}`,
@@ -67,7 +69,7 @@ export function AdminStaff({ locale }: { locale: AppLocale }) {
     },
     onError: (_error, _values, context) => {
       if (context?.snapshot) {
-        queryClient.setQueryData(['staff', locale], context.snapshot);
+        queryClient.setQueryData(staffQueryKey, context.snapshot);
       }
       pushNotification({ message: common('error'), level: 'error' });
     },
@@ -76,7 +78,7 @@ export function AdminStaff({ locale }: { locale: AppLocale }) {
       form.reset();
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff', locale] });
+      queryClient.invalidateQueries({ queryKey: staffQueryKey });
     }
   });
 

@@ -27,11 +27,8 @@ const DialogTitle = DialogPrimitive.Title;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogOverlay = DialogPrimitive.Overlay;
 
-const createBookingsQueryKey = (
-  locale: AppLocale,
-  tenantId: string | null,
-  sessionToken: string | null
-) => ['bookings', locale, tenantId, sessionToken] as const;
+const createBookingsQueryKey = (locale: AppLocale, tenantId: string | null) =>
+  ['bookings', locale, tenantId] as const;
 
 const BOOKING_TIME_ZONE = 'Europe/Zurich';
 
@@ -132,13 +129,8 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
   const notifications = useTranslations('notifications');
   const { session } = useSession();
   const bookingsQueryKey = useMemo(
-    () =>
-      createBookingsQueryKey(
-        locale,
-        session?.tenantId ?? null,
-        session?.accessToken ?? null
-      ),
-    [locale, session?.tenantId, session?.accessToken]
+    () => createBookingsQueryKey(locale, session?.tenantId ?? null),
+    [locale, session?.tenantId]
   );
   const { data: bookings = [] } = useQuery({
     queryKey: bookingsQueryKey,
@@ -146,7 +138,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
       if (!session) {
         return [] as Booking[];
       }
-      return apiClient.listBookings(session.accessToken, locale);
+      return apiClient.listBookings(locale);
     },
     enabled: Boolean(session)
   });
@@ -165,7 +157,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
   const cancelMutation = useMutation({
     mutationFn: (booking: Booking) => {
       if (!session) throw new Error('unauthenticated');
-      return apiClient.cancelBooking(booking.id, locale, session.accessToken);
+      return apiClient.cancelBooking(booking.id, locale);
     },
     onMutate: async (booking) => {
       await queryClient.cancelQueries({ queryKey: bookingsQueryKey });
@@ -195,7 +187,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
   const rescheduleMutation = useMutation({
     mutationFn: ({ booking, values }: { booking: Booking; values: ReschedulePayload }) => {
       if (!session) throw new Error('unauthenticated');
-      return apiClient.rescheduleBooking(booking.id, values, locale, session.accessToken);
+      return apiClient.rescheduleBooking(booking.id, values, locale);
     },
     onMutate: async ({ booking, values }) => {
       await queryClient.cancelQueries({ queryKey: bookingsQueryKey });
