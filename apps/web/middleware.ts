@@ -18,12 +18,21 @@ const securityHeaders: Record<string, string> = {
 export default function middleware(request: NextRequest) {
   const response = intlMiddleware(request);
 
+  const connectSources = new Set(["'self'"]);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.codeccloud.local/v1';
+  try {
+    const { origin } = new URL(apiUrl);
+    connectSources.add(origin);
+  } catch (error) {
+    console.warn('Invalid NEXT_PUBLIC_API_URL for CSP connect-src', error);
+  }
+
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    "connect-src 'self' https://api.codeccloud.local",
+    `connect-src ${Array.from(connectSources).join(' ')}`,
     "font-src 'self' data:",
     "frame-ancestors 'none'",
     "base-uri 'self'",

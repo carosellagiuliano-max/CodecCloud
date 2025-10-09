@@ -2,8 +2,6 @@ import { nanoid } from 'nanoid';
 import { createTranslator } from 'next-intl';
 import { routing } from './i18n/config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.codeccloud.local/v1';
-
 export type Problem = {
   title: string;
   detail?: string;
@@ -36,21 +34,30 @@ async function parseResponse<T>(response: Response): Promise<T> {
   throw error;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.codeccloud.local/v1';
+
 export type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   searchParams?: URLSearchParams;
   body?: unknown;
   headers?: Record<string, string>;
-  accessToken?: string;
   locale?: string;
   idempotency?: boolean;
+  authenticated?: boolean;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}) {
-  const url = new URL(path, API_BASE);
-  if (options.searchParams) {
-    url.search = options.searchParams.toString();
-  }
+  const authenticated = options.authenticated ?? true;
+  const search = options.searchParams ? `?${options.searchParams.toString()}` : '';
+  const endpoint = authenticated
+    ? `/api/internal/proxy${path}${search}`
+    : (() => {
+        const url = new URL(path, API_BASE);
+        if (options.searchParams) {
+          url.search = options.searchParams.toString();
+        }
+        return url.toString();
+      })();
 
   const headers: Record<string, string> = {
     'Accept': 'application/json',
@@ -61,10 +68,6 @@ async function request<T>(path: string, options: RequestOptions = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  if (options.accessToken) {
-    headers['Authorization'] = `Bearer ${options.accessToken}`;
-  }
-
   if (options.locale) {
     headers['Accept-Language'] = options.locale;
   }
@@ -73,12 +76,12 @@ async function request<T>(path: string, options: RequestOptions = {}) {
     headers['Idempotency-Key'] = nanoid();
   }
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(endpoint, {
     method: options.method ?? 'GET',
     headers,
     body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : (options.body as BodyInit | undefined),
     cache: 'no-store',
-    credentials: 'include'
+    credentials: authenticated ? 'include' : 'omit'
   });
 
   return parseResponse<T>(response);
@@ -129,8 +132,7 @@ export type DashboardMetrics = {
 };
 
 export const apiClient = {
-  listServices: (locale?: string, accessToken?: string) =>
-    request<Service[]>('/services', { locale, accessToken }),
+  listServices: (locale?: string) => request<Service[]>('/services', { locale, authenticated: false }),
   listAvailability: (params: {
     serviceId: string;
     from: string;
@@ -151,42 +153,36 @@ export const apiClient = {
       locale: params.locale
     });
   },
-  listBookings: (accessToken: string, locale?: string) =>
-    request<Booking[]>('/bookings', { accessToken, locale }),
-  createBooking: (payload: Partial<Booking>, locale?: string, accessToken?: string) =>
+  listBookings: (locale?: string) => request<Booking[]>('/bookings', { locale }),
+  createBooking: (payload: Partial<Booking>, locale?: string) =>
     request<Booking>('/bookings', {
       method: 'POST',
       body: payload,
       locale,
-      accessToken,
       idempotency: true
     }),
-  rescheduleBooking: (id: string, payload: { start: string; end: string }, locale?: string, accessToken?: string) =>
+  rescheduleBooking: (id: string, payload: { start: string; end: string }, locale?: string) =>
     request<Booking>(`/bookings/${id}/reschedule`, {
       method: 'POST',
       body: payload,
       locale,
-      accessToken,
       idempotency: true
     }),
-  cancelBooking: (id: string, locale?: string, accessToken?: string) =>
+  cancelBooking: (id: string, locale?: string) =>
     request<Booking>(`/bookings/${id}/cancel`, {
       method: 'POST',
       locale,
-      accessToken,
       idempotency: true
     }),
-  listStaff: (accessToken: string, locale?: string) => request<StaffMember[]>('/staff', { accessToken, locale }),
-  inviteStaff: (payload: { name: string; email: string; role: string }, accessToken: string, locale?: string) =>
+  listStaff: (locale?: string) => request<StaffMember[]>('/staff', { locale }),
+  inviteStaff: (payload: { name: string; email: string; role: string }, locale?: string) =>
     request<StaffMember>('/staff/invite', {
       method: 'POST',
       body: payload,
-      accessToken,
       locale,
       idempotency: true
     }),
-  getDashboardMetrics: (accessToken: string, locale?: string) =>
-    request<DashboardMetrics>('/admin/dashboard', { accessToken, locale })
+  getDashboardMetrics: (locale?: string) => request<DashboardMetrics>('/admin/dashboard', { locale })
 };
 
 export async function translateProblem(locale: string, problem: Problem) {

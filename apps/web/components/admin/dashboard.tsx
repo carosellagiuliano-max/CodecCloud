@@ -13,8 +13,8 @@ export function AdminDashboard({ locale }: { locale: AppLocale }) {
   const t = useTranslations('admin.dashboard');
 
   const { data } = useQuery({
-    queryKey: ['admin-dashboard', locale],
-    queryFn: () => (session ? apiClient.getDashboardMetrics(session.accessToken, locale) : undefined),
+    queryKey: ['admin-dashboard', locale, session?.tenantId ?? null],
+    queryFn: () => (session ? apiClient.getDashboardMetrics(locale) : undefined),
     enabled: Boolean(session)
   });
 

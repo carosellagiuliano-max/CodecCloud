@@ -127,7 +127,7 @@ export function CalendarBoard({ locale }: { locale: AppLocale }) {
 
   const mutation = useMutation({
     mutationFn: ({ id, start, end }: { id: string; start: string; end: string }) =>
-      apiClient.rescheduleBooking(id, { start, end }, locale, session.accessToken),
+      apiClient.rescheduleBooking(id, { start, end }, locale),
     onMutate: async ({ id, start, end }) => {
       const previous = bookingsRef.current;
       setBookings((current) =>
@@ -147,8 +147,8 @@ export function CalendarBoard({ locale }: { locale: AppLocale }) {
   });
 
   const { data } = useQuery({
-    queryKey: ['calendar-initial', locale, session.accessToken],
-    queryFn: () => apiClient.listBookings(session.accessToken, locale)
+    queryKey: ['calendar-initial', locale, session.tenantId],
+    queryFn: () => apiClient.listBookings(locale)
   });
 
   useEffect(() => {

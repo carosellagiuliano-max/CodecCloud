@@ -19,7 +19,7 @@ export function PortalDashboard({ locale }: { locale: AppLocale }) {
 
   const { data: bookings = [] } = useQuery({
     queryKey: bookingsQueryKey,
-    queryFn: () => (session ? apiClient.listBookings(session.accessToken, locale) : [] as Booking[]),
+    queryFn: () => (session ? apiClient.listBookings(locale) : ([] as Booking[])),
     enabled: Boolean(session)
   });
 
