@@ -15,27 +15,34 @@ const TRUSTED_PROXY_IP_HEADERS = [
   'true-client-ip'
 ] as const;
 
-const extractConnectionIp = (req: ApiRequest) => {
-  if (req.ip?.trim()) {
-    return req.ip.trim();
-  }
+const extractCandidateIps = (req: ApiRequest) => {
+  const candidates: string[] = [];
   for (const header of TRUSTED_PROXY_IP_HEADERS) {
     const value = req.headers[header];
-    if (value) {
-      return value.split(',')[0]?.trim();
+    if (!value) {
+      continue;
+    }
+    const forwardedIp = value.split(',')[0]?.trim();
+    if (forwardedIp) {
+      candidates.push(forwardedIp);
     }
   }
-  return undefined;
+  if (req.ip?.trim()) {
+    candidates.push(req.ip.trim());
+  }
+  return candidates;
 };
 
 const verifyIp = (req: ApiRequest) => {
-  const ip = extractConnectionIp(req);
-  if (!ip) {
+  const candidates = extractCandidateIps(req);
+  if (candidates.length === 0) {
     throw new BadRequestError('Source IP missing.');
   }
-  if (!SUMUP_IP_ALLOWLIST.includes(ip)) {
+  const allowlistedIp = candidates.find((ip) => SUMUP_IP_ALLOWLIST.includes(ip));
+  if (!allowlistedIp) {
     throw new BadRequestError('Source IP not allowed.');
   }
+  return allowlistedIp;
 };
 
 const verifyTimestamp = (timestampHeader: string | undefined) => {
