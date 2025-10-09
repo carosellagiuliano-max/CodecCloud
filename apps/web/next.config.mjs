@@ -47,9 +47,12 @@ const withPWAConfig = withPWA({
   }
 });
 
+const enableReactCompiler =
+  process.env.NEXT_ENABLE_REACT_COMPILER?.toLowerCase() === 'true';
+
 const nextConfig = withPWAConfig({
   experimental: {
-    reactCompiler: true,
+    reactCompiler: enableReactCompiler || undefined,
     instrumentationHook: true
   },
   images: {
