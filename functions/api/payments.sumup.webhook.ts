@@ -8,12 +8,26 @@ const SUMUP_TOLERANCE_SECONDS = 60 * 5;
 const SUMUP_SECRET = process.env.SUMUP_WEBHOOK_SECRET ?? 'sumup_test_secret';
 const SUMUP_IP_ALLOWLIST = (process.env.SUMUP_IP_ALLOWLIST ?? '127.0.0.1').split(',');
 
+const TRUSTED_PROXY_IP_HEADERS = ['x-nf-client-connection-ip', 'x-vercel-proxy-ip', 'true-client-ip'] as const;
+
+const extractConnectionIp = (req: ApiRequest) => {
+  if (req.ip?.trim()) {
+    return req.ip.trim();
+  }
+  for (const header of TRUSTED_PROXY_IP_HEADERS) {
+    const value = req.headers[header];
+    if (value) {
+      return value.split(',')[0]?.trim();
+    }
+  }
+  return undefined;
+};
+
 const verifyIp = (req: ApiRequest) => {
-  const source = req.headers['x-forwarded-for'] ?? req.headers['cf-connecting-ip'];
-  if (!source) {
+  const ip = extractConnectionIp(req);
+  if (!ip) {
     throw new BadRequestError('Source IP missing.');
   }
-  const ip = source.split(',')[0].trim();
   if (!SUMUP_IP_ALLOWLIST.includes(ip)) {
     throw new BadRequestError('Source IP not allowed.');
   }
