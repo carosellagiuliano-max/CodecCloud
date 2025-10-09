@@ -1,0 +1,2324 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CodecCloud Salon API",
+    "version": "1.0.0",
+    "description": "Salon management API (MVP). Authentication via tenant scoped bearer tokens. All responses follow RFC 9457 (Problem Details) on error."
+  },
+  "servers": [
+    {
+      "url": "https://api.codeccloud.local/v1",
+      "description": "Primary API endpoint (Edge)."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Bookings",
+      "description": "Booking lifecycle operations."
+    },
+    {
+      "name": "Payments",
+      "description": "Incoming payment webhooks."
+    },
+    {
+      "name": "Invoices",
+      "description": "Invoice generation."
+    },
+    {
+      "name": "Calendar",
+      "description": "Calendar feed integration."
+    }
+  ],
+  "paths": {
+    "/bookings/availability": {
+      "get": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "List available booking slots",
+        "description": "Returns availability for a service (optionally filtered by staff) within the provided time range.",
+        "security": [
+          {
+            "BearerAuth": [],
+            "WorkspaceId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "staffId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "granularityMinutes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 480
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availability returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAvailabilityResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Create a booking",
+        "description": "Creates a booking atomically and enqueues an outbox event for downstream processing.",
+        "security": [
+          {
+            "BearerAuth": [],
+            "WorkspaceId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booking created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingCreateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{bookingId}/reschedule": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Reschedule a booking",
+        "security": [
+          {
+            "BearerAuth": [],
+            "WorkspaceId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingReschedule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking rescheduled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingRescheduleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{bookingId}/cancel": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Cancel a booking",
+        "security": [
+          {
+            "BearerAuth": [],
+            "WorkspaceId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingCancel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingCancelResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/stripe/webhook": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Stripe webhook handler",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StripeWebhook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event acknowledged."
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/sumup/webhook": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "SumUp webhook handler",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SumUpWebhook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event acknowledged."
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/generate": {
+      "post": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Generate an invoice PDF",
+        "security": [
+          {
+            "BearerAuth": [],
+            "WorkspaceId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceGenerate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invoice generated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceGenerateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/feed.ics": {
+      "get": {
+        "tags": [
+          "Calendar"
+        ],
+        "summary": "ICS calendar feed",
+        "description": "Edge endpoint returning an authenticated iCalendar feed.",
+        "security": [
+          {
+            "BearerAuth": [],
+            "WorkspaceId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ICS feed returned.",
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProblemDetail": {
+        "$ref": "#/definitions/ProblemDetail",
+        "definitions": {
+          "ProblemDetail": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "format": "uri",
+                "description": "Problem type URI."
+              },
+              "title": {
+                "type": "string",
+                "description": "Short, human readable summary of the problem."
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code."
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed human readable explanation."
+              },
+              "instance": {
+                "type": "string",
+                "description": "URI that identifies the specific occurrence."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlating X-Request-ID header."
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "description": "Field path that caused the validation error."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Validation message."
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Field level validation issues."
+              }
+            },
+            "required": [
+              "type",
+              "title",
+              "status"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "Money": {
+        "$ref": "#/definitions/Money",
+        "definitions": {
+          "Money": {
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "CHF",
+                  "EUR"
+                ],
+                "description": "ISO-4217 currency code."
+              },
+              "amount": {
+                "type": "integer",
+                "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+              }
+            },
+            "required": [
+              "currency",
+              "amount"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "BookingStatus": {
+        "$ref": "#/definitions/BookingStatus",
+        "definitions": {
+          "BookingStatus": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "rescheduled",
+              "cancelled"
+            ],
+            "description": "Lifecycle status of the booking."
+          }
+        }
+      },
+      "Customer": {
+        "$ref": "#/definitions/Customer",
+        "definitions": {
+          "Customer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Customer identifier (tenant scoped)."
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Customer contact email address."
+              },
+              "phone": {
+                "type": "string",
+                "description": "Customer phone number in E.164 format."
+              },
+              "firstName": {
+                "type": "string",
+                "description": "Customer given name."
+              },
+              "lastName": {
+                "type": "string",
+                "description": "Customer family name."
+              }
+            },
+            "required": [
+              "id",
+              "email",
+              "firstName",
+              "lastName"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "Booking": {
+        "$ref": "#/definitions/Booking",
+        "definitions": {
+          "Booking": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Booking identifier."
+              },
+              "tenantId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Tenant identifier."
+              },
+              "serviceId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Service identifier."
+              },
+              "staffId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Staff member responsible for the booking."
+              },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Customer identifier (tenant scoped)."
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Customer contact email address."
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Customer phone number in E.164 format."
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "description": "Customer given name."
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "description": "Customer family name."
+                  }
+                },
+                "required": [
+                  "id",
+                  "email",
+                  "firstName",
+                  "lastName"
+                ],
+                "additionalProperties": false,
+                "description": "Customer reference."
+              },
+              "slotStart": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Start of the booked slot."
+              },
+              "slotEnd": {
+                "type": "string",
+                "format": "date-time",
+                "description": "End of the booked slot."
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "scheduled",
+                  "rescheduled",
+                  "cancelled"
+                ],
+                "description": "Lifecycle status of the booking."
+              },
+              "price": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "CHF",
+                      "EUR"
+                    ],
+                    "description": "ISO-4217 currency code."
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+                  }
+                },
+                "required": [
+                  "currency",
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "description": "Price snapshot applied to the booking."
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Creation timestamp."
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Last modification timestamp."
+              },
+              "rescheduledFromId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Original booking identifier if rescheduled.",
+                "nullable": true
+              },
+              "cancellationReason": {
+                "type": "string",
+                "nullable": true,
+                "description": "Optional reason supplied when the booking was cancelled."
+              }
+            },
+            "required": [
+              "id",
+              "tenantId",
+              "serviceId",
+              "staffId",
+              "customer",
+              "slotStart",
+              "slotEnd",
+              "status",
+              "price",
+              "createdAt",
+              "updatedAt",
+              "rescheduledFromId",
+              "cancellationReason"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "AvailabilitySlot": {
+        "$ref": "#/definitions/AvailabilitySlot",
+        "definitions": {
+          "AvailabilitySlot": {
+            "type": "object",
+            "properties": {
+              "slotStart": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "slotEnd": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "serviceId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              },
+              "staffId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              }
+            },
+            "required": [
+              "slotStart",
+              "slotEnd",
+              "serviceId",
+              "staffId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "GetAvailabilityQuery": {
+        "$ref": "#/definitions/GetAvailabilityQuery",
+        "definitions": {
+          "GetAvailabilityQuery": {
+            "type": "object",
+            "properties": {
+              "serviceId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Service to query availability for."
+              },
+              "staffId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Optional staff filter."
+              },
+              "from": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Inclusive lower bound of the availability range."
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Exclusive upper bound of the availability range."
+              },
+              "granularityMinutes": {
+                "type": "integer",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 480,
+                "default": 15,
+                "description": "Slot granularity in minutes (default 15)."
+              }
+            },
+            "required": [
+              "serviceId",
+              "from",
+              "to"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "GetAvailabilityResponse": {
+        "$ref": "#/definitions/GetAvailabilityResponse",
+        "definitions": {
+          "GetAvailabilityResponse": {
+            "type": "object",
+            "properties": {
+              "slots": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slotStart": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+                    },
+                    "slotEnd": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+                    },
+                    "serviceId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "UUID v4"
+                    },
+                    "staffId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "UUID v4"
+                    }
+                  },
+                  "required": [
+                    "slotStart",
+                    "slotEnd",
+                    "serviceId",
+                    "staffId"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Available slots for the requested interval."
+              }
+            },
+            "required": [
+              "slots"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "BookingCreate": {
+        "$ref": "#/definitions/BookingCreate",
+        "definitions": {
+          "BookingCreate": {
+            "type": "object",
+            "properties": {
+              "serviceId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              },
+              "staffId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              },
+              "slotStart": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "slotEnd": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "price": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "CHF",
+                      "EUR"
+                    ],
+                    "description": "ISO-4217 currency code."
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+                  }
+                },
+                "required": [
+                  "currency",
+                  "amount"
+                ],
+                "additionalProperties": false
+              },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Customer identifier (tenant scoped)."
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Customer contact email address."
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Customer phone number in E.164 format."
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "description": "Customer given name."
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "description": "Customer family name."
+                  }
+                },
+                "required": [
+                  "id",
+                  "email",
+                  "firstName",
+                  "lastName"
+                ],
+                "additionalProperties": false
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "serviceId",
+              "staffId",
+              "slotStart",
+              "slotEnd",
+              "price",
+              "customer"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "BookingCreateResponse": {
+        "$ref": "#/definitions/BookingCreateResponse",
+        "definitions": {
+          "BookingCreateResponse": {
+            "type": "object",
+            "properties": {
+              "booking": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Booking identifier."
+                  },
+                  "tenantId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Tenant identifier."
+                  },
+                  "serviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service identifier."
+                  },
+                  "staffId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Staff member responsible for the booking."
+                  },
+                  "customer": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Customer identifier (tenant scoped)."
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Customer contact email address."
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "Customer phone number in E.164 format."
+                      },
+                      "firstName": {
+                        "type": "string",
+                        "description": "Customer given name."
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "description": "Customer family name."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "email",
+                      "firstName",
+                      "lastName"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Customer reference."
+                  },
+                  "slotStart": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start of the booked slot."
+                  },
+                  "slotEnd": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End of the booked slot."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "scheduled",
+                      "rescheduled",
+                      "cancelled"
+                    ],
+                    "description": "Lifecycle status of the booking."
+                  },
+                  "price": {
+                    "type": "object",
+                    "properties": {
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "CHF",
+                          "EUR"
+                        ],
+                        "description": "ISO-4217 currency code."
+                      },
+                      "amount": {
+                        "type": "integer",
+                        "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+                      }
+                    },
+                    "required": [
+                      "currency",
+                      "amount"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Price snapshot applied to the booking."
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Creation timestamp."
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Last modification timestamp."
+                  },
+                  "rescheduledFromId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Original booking identifier if rescheduled.",
+                    "nullable": true
+                  },
+                  "cancellationReason": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Optional reason supplied when the booking was cancelled."
+                  }
+                },
+                "required": [
+                  "id",
+                  "tenantId",
+                  "serviceId",
+                  "staffId",
+                  "customer",
+                  "slotStart",
+                  "slotEnd",
+                  "status",
+                  "price",
+                  "createdAt",
+                  "updatedAt",
+                  "rescheduledFromId",
+                  "cancellationReason"
+                ],
+                "additionalProperties": false
+              },
+              "outboxEventId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Identifier of the enqueued outbox event for downstream systems."
+              }
+            },
+            "required": [
+              "booking",
+              "outboxEventId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "BookingReschedule": {
+        "$ref": "#/definitions/BookingReschedule",
+        "definitions": {
+          "BookingReschedule": {
+            "type": "object",
+            "properties": {
+              "bookingId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              },
+              "slotStart": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "slotEnd": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "bookingId",
+              "slotStart",
+              "slotEnd"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "BookingRescheduleResponse": {
+        "$ref": "#/definitions/BookingRescheduleResponse",
+        "definitions": {
+          "BookingRescheduleResponse": {
+            "type": "object",
+            "properties": {
+              "booking": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Booking identifier."
+                  },
+                  "tenantId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Tenant identifier."
+                  },
+                  "serviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service identifier."
+                  },
+                  "staffId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Staff member responsible for the booking."
+                  },
+                  "customer": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Customer identifier (tenant scoped)."
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Customer contact email address."
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "Customer phone number in E.164 format."
+                      },
+                      "firstName": {
+                        "type": "string",
+                        "description": "Customer given name."
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "description": "Customer family name."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "email",
+                      "firstName",
+                      "lastName"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Customer reference."
+                  },
+                  "slotStart": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start of the booked slot."
+                  },
+                  "slotEnd": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End of the booked slot."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "scheduled",
+                      "rescheduled",
+                      "cancelled"
+                    ],
+                    "description": "Lifecycle status of the booking."
+                  },
+                  "price": {
+                    "type": "object",
+                    "properties": {
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "CHF",
+                          "EUR"
+                        ],
+                        "description": "ISO-4217 currency code."
+                      },
+                      "amount": {
+                        "type": "integer",
+                        "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+                      }
+                    },
+                    "required": [
+                      "currency",
+                      "amount"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Price snapshot applied to the booking."
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Creation timestamp."
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Last modification timestamp."
+                  },
+                  "rescheduledFromId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Original booking identifier if rescheduled.",
+                    "nullable": true
+                  },
+                  "cancellationReason": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Optional reason supplied when the booking was cancelled."
+                  }
+                },
+                "required": [
+                  "id",
+                  "tenantId",
+                  "serviceId",
+                  "staffId",
+                  "customer",
+                  "slotStart",
+                  "slotEnd",
+                  "status",
+                  "price",
+                  "createdAt",
+                  "updatedAt",
+                  "rescheduledFromId",
+                  "cancellationReason"
+                ],
+                "additionalProperties": false
+              },
+              "outboxEventId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              }
+            },
+            "required": [
+              "booking",
+              "outboxEventId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "BookingCancel": {
+        "$ref": "#/definitions/BookingCancel",
+        "definitions": {
+          "BookingCancel": {
+            "type": "object",
+            "properties": {
+              "bookingId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "waiveFee": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "bookingId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "BookingCancelResponse": {
+        "$ref": "#/definitions/BookingCancelResponse",
+        "definitions": {
+          "BookingCancelResponse": {
+            "type": "object",
+            "properties": {
+              "booking": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Booking identifier."
+                  },
+                  "tenantId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Tenant identifier."
+                  },
+                  "serviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service identifier."
+                  },
+                  "staffId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Staff member responsible for the booking."
+                  },
+                  "customer": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Customer identifier (tenant scoped)."
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Customer contact email address."
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "Customer phone number in E.164 format."
+                      },
+                      "firstName": {
+                        "type": "string",
+                        "description": "Customer given name."
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "description": "Customer family name."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "email",
+                      "firstName",
+                      "lastName"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Customer reference."
+                  },
+                  "slotStart": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start of the booked slot."
+                  },
+                  "slotEnd": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End of the booked slot."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "scheduled",
+                      "rescheduled",
+                      "cancelled"
+                    ],
+                    "description": "Lifecycle status of the booking."
+                  },
+                  "price": {
+                    "type": "object",
+                    "properties": {
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "CHF",
+                          "EUR"
+                        ],
+                        "description": "ISO-4217 currency code."
+                      },
+                      "amount": {
+                        "type": "integer",
+                        "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+                      }
+                    },
+                    "required": [
+                      "currency",
+                      "amount"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Price snapshot applied to the booking."
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Creation timestamp."
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Last modification timestamp."
+                  },
+                  "rescheduledFromId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Original booking identifier if rescheduled.",
+                    "nullable": true
+                  },
+                  "cancellationReason": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Optional reason supplied when the booking was cancelled."
+                  }
+                },
+                "required": [
+                  "id",
+                  "tenantId",
+                  "serviceId",
+                  "staffId",
+                  "customer",
+                  "slotStart",
+                  "slotEnd",
+                  "status",
+                  "price",
+                  "createdAt",
+                  "updatedAt",
+                  "rescheduledFromId",
+                  "cancellationReason"
+                ],
+                "additionalProperties": false
+              },
+              "outboxEventId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              }
+            },
+            "required": [
+              "booking",
+              "outboxEventId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "StripeWebhook": {
+        "$ref": "#/definitions/StripeWebhook",
+        "definitions": {
+          "StripeWebhook": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "created": {
+                "type": "number"
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "created",
+              "data"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "SumUpWebhook": {
+        "$ref": "#/definitions/SumUpWebhook",
+        "definitions": {
+          "SumUpWebhook": {
+            "type": "object",
+            "properties": {
+              "event_id": {
+                "type": "string"
+              },
+              "event_type": {
+                "type": "string"
+              },
+              "occurred_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "payload": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "event_id",
+              "event_type",
+              "occurred_at",
+              "payload",
+              "sequence"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "InvoiceGenerate": {
+        "$ref": "#/definitions/InvoiceGenerate",
+        "definitions": {
+          "InvoiceGenerate": {
+            "type": "object",
+            "properties": {
+              "bookingId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              },
+              "issueDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "dueDate": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "language": {
+                "type": "string",
+                "enum": [
+                  "de-CH",
+                  "fr-CH",
+                  "it-CH",
+                  "en-CH"
+                ],
+                "default": "de-CH"
+              },
+              "sendEmail": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "bookingId",
+              "issueDate",
+              "dueDate"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "InvoiceGenerateResponse": {
+        "$ref": "#/definitions/InvoiceGenerateResponse",
+        "definitions": {
+          "InvoiceGenerateResponse": {
+            "type": "object",
+            "properties": {
+              "invoiceId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              },
+              "booking": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Booking identifier."
+                  },
+                  "tenantId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Tenant identifier."
+                  },
+                  "serviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Service identifier."
+                  },
+                  "staffId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Staff member responsible for the booking."
+                  },
+                  "customer": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Customer identifier (tenant scoped)."
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Customer contact email address."
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "Customer phone number in E.164 format."
+                      },
+                      "firstName": {
+                        "type": "string",
+                        "description": "Customer given name."
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "description": "Customer family name."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "email",
+                      "firstName",
+                      "lastName"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Customer reference."
+                  },
+                  "slotStart": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start of the booked slot."
+                  },
+                  "slotEnd": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End of the booked slot."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "scheduled",
+                      "rescheduled",
+                      "cancelled"
+                    ],
+                    "description": "Lifecycle status of the booking."
+                  },
+                  "price": {
+                    "type": "object",
+                    "properties": {
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "CHF",
+                          "EUR"
+                        ],
+                        "description": "ISO-4217 currency code."
+                      },
+                      "amount": {
+                        "type": "integer",
+                        "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+                      }
+                    },
+                    "required": [
+                      "currency",
+                      "amount"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Price snapshot applied to the booking."
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Creation timestamp."
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Last modification timestamp."
+                  },
+                  "rescheduledFromId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Original booking identifier if rescheduled.",
+                    "nullable": true
+                  },
+                  "cancellationReason": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Optional reason supplied when the booking was cancelled."
+                  }
+                },
+                "required": [
+                  "id",
+                  "tenantId",
+                  "serviceId",
+                  "staffId",
+                  "customer",
+                  "slotStart",
+                  "slotEnd",
+                  "status",
+                  "price",
+                  "createdAt",
+                  "updatedAt",
+                  "rescheduledFromId",
+                  "cancellationReason"
+                ],
+                "additionalProperties": false
+              },
+              "total": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "CHF",
+                      "EUR"
+                    ],
+                    "description": "ISO-4217 currency code."
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "description": "Amount in the smallest currency unit (e.g. Rappen/Cents)."
+                  }
+                },
+                "required": [
+                  "currency",
+                  "amount"
+                ],
+                "additionalProperties": false
+              },
+              "pdfUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "outboxEventId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "UUID v4"
+              }
+            },
+            "required": [
+              "invoiceId",
+              "booking",
+              "total",
+              "pdfUrl",
+              "outboxEventId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "CalendarFeedQuery": {
+        "$ref": "#/definitions/CalendarFeedQuery",
+        "definitions": {
+          "CalendarFeedQuery": {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "minLength": 32,
+                "description": "HMAC signed feed token"
+              },
+              "from": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO-8601 timestamp in UTC (e.g. 2025-01-01T09:00:00Z)"
+              }
+            },
+            "required": [
+              "token"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "CalendarFeedResponse": {
+        "$ref": "#/definitions/CalendarFeedResponse",
+        "definitions": {
+          "CalendarFeedResponse": {
+            "type": "object",
+            "properties": {
+              "ics": {
+                "type": "string",
+                "description": "iCalendar payload containing upcoming appointments."
+              }
+            },
+            "required": [
+              "ics"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "WorkspaceId": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Workspace-ID"
+      }
+    }
+  }
+}
