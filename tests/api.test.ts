@@ -262,12 +262,13 @@ describe('Webhook handlers', () => {
     expect(second.body.replayed).toBe(true);
   });
 
-  it('validates SumUp HMAC, IP and sequence ordering', async () => {
+  it('validates SumUp HMAC, IP, provider verification and sequence ordering', async () => {
+    const transactionId = 'txn_sumup_1';
     const payload = {
       event_id: 'sumup_evt_1',
       event_type: 'transaction.completed',
       occurred_at: '2030-03-01T12:00:00.000Z',
-      payload: { tenant_id: TENANT_ID },
+      payload: { tenant_id: TENANT_ID, transaction_id: transactionId },
       sequence: 1
     };
     const raw = JSON.stringify(payload);
@@ -275,6 +276,24 @@ describe('Webhook handlers', () => {
     const signature = createHmac('sha256', 'sumup_test_secret')
       .update(`${timestamp}.${raw}`)
       .digest('hex');
+
+    const fetchSpy = vi.spyOn(globalThis as any, 'fetch').mockImplementation(async (input: any) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input?.url ?? '';
+      if (url.endsWith('/token')) {
+        return new Response(
+          JSON.stringify({ access_token: 'sumup-token', expires_in: 3600 }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      if (url.includes(`/v0.1/me/transactions/${transactionId}`)) {
+        return new Response(
+          JSON.stringify({ id: transactionId, event_id: payload.event_id, status: 'SUCCESSFUL' }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      throw new Error(`Unexpected fetch call for ${url}`);
+    });
+
     const request: ApiRequest = {
       method: 'POST',
       headers: {
@@ -284,40 +303,44 @@ describe('Webhook handlers', () => {
       body: raw,
       ip: '127.0.0.1'
     } as unknown as ApiRequest;
-    const first = (await sumupWebhook(request)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
-    expect(first.status).toBe(200);
+    try {
+      const first = (await sumupWebhook(request)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
+      expect(first.status).toBe(200);
 
-    const replay = (await sumupWebhook(request)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
-    expect(replay.body.replayed).toBe(true);
+      const replay = (await sumupWebhook(request)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
+      expect(replay.body.replayed).toBe(true);
 
-    const proxiedRequest: ApiRequest = {
-      method: 'POST',
-      headers: {
-        'x-sumup-timestamp': timestamp,
-        'x-sumup-hmac': signature,
-        'cf-connecting-ip': '127.0.0.1'
-      },
-      body: raw
-    } as unknown as ApiRequest;
-    const proxied = (await sumupWebhook(proxiedRequest)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
-    expect(proxied.status).toBe(200);
+      const proxiedRequest: ApiRequest = {
+        method: 'POST',
+        headers: {
+          'x-sumup-timestamp': timestamp,
+          'x-sumup-hmac': signature,
+          'cf-connecting-ip': '127.0.0.1'
+        },
+        body: raw
+      } as unknown as ApiRequest;
+      const proxied = (await sumupWebhook(proxiedRequest)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
+      expect(proxied.status).toBe(200);
 
-    const higherSequencePayload = { ...payload, sequence: 2 };
-    const rawHigh = JSON.stringify(higherSequencePayload);
-    const signatureHigh = createHmac('sha256', 'sumup_test_secret')
-      .update(`${timestamp}.${rawHigh}`)
-      .digest('hex');
-    const secondRequest: ApiRequest = {
-      method: 'POST',
-      headers: {
-        'x-sumup-timestamp': timestamp,
-        'x-sumup-hmac': signatureHigh
-      },
-      body: rawHigh,
-      ip: '127.0.0.1'
-    } as unknown as ApiRequest;
-    const higher = (await sumupWebhook(secondRequest)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
-    expect(higher.body.replayed).toBe(false);
+      const higherSequencePayload = { ...payload, sequence: 2 };
+      const rawHigh = JSON.stringify(higherSequencePayload);
+      const signatureHigh = createHmac('sha256', 'sumup_test_secret')
+        .update(`${timestamp}.${rawHigh}`)
+        .digest('hex');
+      const secondRequest: ApiRequest = {
+        method: 'POST',
+        headers: {
+          'x-sumup-timestamp': timestamp,
+          'x-sumup-hmac': signatureHigh
+        },
+        body: rawHigh,
+        ip: '127.0.0.1'
+      } as unknown as ApiRequest;
+      const higher = (await sumupWebhook(secondRequest)) as HttpResponse<{ received: boolean; replayed?: boolean }>;
+      expect(higher.body.replayed).toBe(false);
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 });
 
