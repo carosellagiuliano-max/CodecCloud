@@ -18,6 +18,7 @@ const rescheduleSchema = z.object({
 });
 
 type RescheduleFormValues = z.infer<typeof rescheduleSchema>;
+type ReschedulePayload = { start: string; end: string };
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -26,10 +27,38 @@ const DialogTitle = DialogPrimitive.Title;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogOverlay = DialogPrimitive.Overlay;
 
-function useBookings(locale: AppLocale) {
+const createBookingsQueryKey = (locale: AppLocale, tenantId: string | null) =>
+  ['bookings', locale, tenantId] as const;
+
+const toLocalDateTimeInputValue = (isoString: string) => {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const timezoneOffset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - timezoneOffset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+};
+
+const toIsoTimestamp = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toISOString();
+};
+
+export function PortalBookings({ locale }: { locale: AppLocale }) {
+  const t = useTranslations('portal');
+  const common = useTranslations('common');
+  const notifications = useTranslations('notifications');
   const { session } = useSession();
-  const query = useQuery({
-    queryKey: ['bookings', locale],
+  const bookingsQueryKey = useMemo(
+    () => createBookingsQueryKey(locale, session?.tenantId ?? null),
+    [locale, session?.tenantId]
+  );
+  const { data: bookings = [] } = useQuery({
+    queryKey: bookingsQueryKey,
     queryFn: () => {
       if (!session) {
         return [] as Booking[];
@@ -38,16 +67,6 @@ function useBookings(locale: AppLocale) {
     },
     enabled: Boolean(session)
   });
-
-  return query;
-}
-
-export function PortalBookings({ locale }: { locale: AppLocale }) {
-  const t = useTranslations('portal');
-  const common = useTranslations('common');
-  const notifications = useTranslations('notifications');
-  const { session } = useSession();
-  const { data: bookings = [] } = useBookings(locale);
   const queryClient = useQueryClient();
   const pushNotification = useUiStore((state) => state.pushNotification);
   const connectivity = useUiStore((state) => state.connectivity);
@@ -55,7 +74,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
   const isAuthenticated = Boolean(session);
 
   const optimisticUpdate = (id: string, updater: (booking: Booking) => Booking) => {
-    queryClient.setQueryData<Booking[]>(['bookings', locale], (previous = []) =>
+    queryClient.setQueryData<Booking[]>(bookingsQueryKey, (previous = []) =>
       previous.map((booking) => (booking.id === id ? updater(booking) : booking))
     );
   };
@@ -66,15 +85,15 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
       return apiClient.cancelBooking(booking.id, locale, session.accessToken);
     },
     onMutate: async (booking) => {
-      await queryClient.cancelQueries({ queryKey: ['bookings', locale] });
-      const snapshot = queryClient.getQueryData<Booking[]>(['bookings', locale]);
+      await queryClient.cancelQueries({ queryKey: bookingsQueryKey });
+      const snapshot = queryClient.getQueryData<Booking[]>(bookingsQueryKey);
       optimisticUpdate(booking.id, (current) => ({ ...current, status: 'cancelled' }));
       pushNotification({ message: notifications('optimistic'), level: 'info' });
       return { snapshot };
     },
     onError: (error, _booking, context) => {
       if (context?.snapshot) {
-        queryClient.setQueryData(['bookings', locale], context.snapshot);
+        queryClient.setQueryData(bookingsQueryKey, context.snapshot);
       }
       const isConflict = (error as Error & { problem?: { status?: number } }).problem?.status === 409;
       pushNotification({
@@ -86,25 +105,25 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
       pushNotification({ message: common('success'), level: 'success' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['bookings', locale] });
+      queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
     }
   });
 
   const rescheduleMutation = useMutation({
-    mutationFn: ({ booking, values }: { booking: Booking; values: RescheduleFormValues }) => {
+    mutationFn: ({ booking, values }: { booking: Booking; values: ReschedulePayload }) => {
       if (!session) throw new Error('unauthenticated');
       return apiClient.rescheduleBooking(booking.id, values, locale, session.accessToken);
     },
     onMutate: async ({ booking, values }) => {
-      await queryClient.cancelQueries({ queryKey: ['bookings', locale] });
-      const snapshot = queryClient.getQueryData<Booking[]>(['bookings', locale]);
+      await queryClient.cancelQueries({ queryKey: bookingsQueryKey });
+      const snapshot = queryClient.getQueryData<Booking[]>(bookingsQueryKey);
       optimisticUpdate(booking.id, (current) => ({ ...current, start: values.start, end: values.end }));
       pushNotification({ message: notifications('optimistic'), level: 'info' });
       return { snapshot };
     },
     onError: (error, _variables, context) => {
       if (context?.snapshot) {
-        queryClient.setQueryData(['bookings', locale], context.snapshot);
+        queryClient.setQueryData(bookingsQueryKey, context.snapshot);
       }
       const isConflict = (error as Error & { problem?: { status?: number } }).problem?.status === 409;
       pushNotification({
@@ -117,7 +136,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
       setSelectedBooking(null);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['bookings', locale] });
+      queryClient.invalidateQueries({ queryKey: bookingsQueryKey });
     }
   });
 
@@ -148,7 +167,7 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
   const resetForm = (booking: Booking | null) => {
     setSelectedBooking(booking);
     if (booking) {
-      form.reset({ start: booking.start.slice(0, 16), end: booking.end.slice(0, 16) });
+      form.reset({ start: toLocalDateTimeInputValue(booking.start), end: toLocalDateTimeInputValue(booking.end) });
     }
   };
 
@@ -200,7 +219,13 @@ export function PortalBookings({ locale }: { locale: AppLocale }) {
                             <DialogTitle className="text-lg font-semibold text-slate-900">{t('reschedule')}</DialogTitle>
                             <form
                               className="mt-4 space-y-4"
-                              onSubmit={form.handleSubmit((values) => rescheduleMutation.mutate({ booking, values }))}
+                              onSubmit={form.handleSubmit((values) => {
+                                const payload: ReschedulePayload = {
+                                  start: toIsoTimestamp(values.start),
+                                  end: toIsoTimestamp(values.end)
+                                };
+                                rescheduleMutation.mutate({ booking, values: payload });
+                              })}
                             >
                               <label className="block text-sm font-medium text-slate-700">
                                 Start
