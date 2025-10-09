@@ -39,19 +39,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
-      - name: Wait for database
-        env:
-          PGPASSWORD: postgres
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U postgres; then
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "database never became ready" >&2
-          exit 1
-
       - name: Apply migrations twice (idempotency check)
         env:
           PGPASSWORD: postgres
